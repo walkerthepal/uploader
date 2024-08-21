@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
 
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
@@ -18,6 +20,7 @@ import (
 var (
 	googleOauthConfig *oauth2.Config
 	randomState       = "random"
+	templates         *template.Template
 )
 
 type Credentials struct {
@@ -38,6 +41,8 @@ func init() {
 		Scopes:       []string{"https://www.googleapis.com/auth/youtube.upload"},
 		Endpoint:     google.Endpoint,
 	}
+
+	templates = template.Must(template.ParseGlob("templates/*.html"))
 }
 
 func loadCredentials(filename string) (*Credentials, error) {
@@ -60,62 +65,72 @@ func loadCredentials(filename string) (*Credentials, error) {
 }
 
 func main() {
-	router := gin.Default()
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
 
-	router.GET("/login", handleGoogleLogin)
-	router.GET("/callback", handleGoogleCallback)
-	router.POST("/upload", uploadVideo)
+	r.Get("/", showHomePage)
+	r.Get("/login", handleGoogleLogin)
+	r.Get("/callback", handleGoogleCallback)
+	r.Get("/upload", showUploadPage)
+	r.Post("/upload", uploadVideo)
 
-	router.Run(":8080")
+	log.Println("Server is running on :8080")
+	http.ListenAndServe(":8080", r)
 }
 
-func handleGoogleLogin(c *gin.Context) {
+func showHomePage(w http.ResponseWriter, r *http.Request) {
+	templates.ExecuteTemplate(w, "index.html", nil)
+}
+
+func handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
 	url := googleOauthConfig.AuthCodeURL(randomState)
-	c.Redirect(http.StatusTemporaryRedirect, url)
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-func handleGoogleCallback(c *gin.Context) {
-	if c.Query("state") != randomState {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state parameter"})
+func handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Query().Get("state") != randomState {
+		http.Error(w, "Invalid state parameter", http.StatusBadRequest)
 		return
 	}
 
-	token, err := googleOauthConfig.Exchange(context.Background(), c.Query("code"))
+	token, err := googleOauthConfig.Exchange(context.Background(), r.URL.Query().Get("code"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Code exchange failed"})
+		http.Error(w, "Code exchange failed", http.StatusInternalServerError)
 		return
 	}
 
-	// Store the token securely (in a real application, you'd use a database)
 	tokenFile, err := json.Marshal(token)
 	if err != nil {
 		log.Printf("Unable to marshal token: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process authentication token"})
+		http.Error(w, "Failed to process authentication token", http.StatusInternalServerError)
 		return
 	}
 
 	err = os.WriteFile("token.json", tokenFile, 0600)
 	if err != nil {
 		log.Printf("Unable to write token to file: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save authentication token"})
+		http.Error(w, "Failed to save authentication token", http.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Successfully authenticated with Google"})
+	http.Redirect(w, r, "/upload", http.StatusSeeOther)
 }
 
-func uploadVideo(c *gin.Context) {
-	// Read the stored token
+func showUploadPage(w http.ResponseWriter, r *http.Request) {
+	templates.ExecuteTemplate(w, "upload.html", nil)
+}
+
+func uploadVideo(w http.ResponseWriter, r *http.Request) {
 	tokenFile, err := os.ReadFile("token.json")
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		http.Error(w, "User not authenticated", http.StatusUnauthorized)
 		return
 	}
 
 	var token oauth2.Token
 	err = json.Unmarshal(tokenFile, &token)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse authentication token"})
+		http.Error(w, "Failed to parse authentication token", http.StatusInternalServerError)
 		return
 	}
 
@@ -123,39 +138,33 @@ func uploadVideo(c *gin.Context) {
 
 	service, err := youtube.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create YouTube service"})
+		http.Error(w, "Failed to create YouTube service", http.StatusInternalServerError)
 		return
 	}
 
-	file, err := c.FormFile("video")
+	file, _, err := r.FormFile("video")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get video file from form"})
+		http.Error(w, "Failed to get video file from form", http.StatusBadRequest)
 		return
 	}
-
-	fileContent, err := file.Open()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open video file"})
-		return
-	}
-	defer fileContent.Close()
+	defer file.Close()
 
 	upload := &youtube.Video{
 		Snippet: &youtube.VideoSnippet{
-			Title:       c.PostForm("title"),
-			Description: c.PostForm("description"),
+			Title:       r.FormValue("title"),
+			Description: r.FormValue("description"),
 			CategoryId:  "22", // People & Blogs category
 		},
 		Status: &youtube.VideoStatus{PrivacyStatus: "private"},
 	}
 
 	call := service.Videos.Insert([]string{"snippet", "status"}, upload)
-	response, err := call.Media(fileContent).Do()
+	response, err := call.Media(file).Do()
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Error making YouTube API call: %v", err)})
+		templates.ExecuteTemplate(w, "result.html", map[string]string{"message": fmt.Sprintf("Error uploading video: %v", err)})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Video uploaded successfully", "video_id": response.Id})
+	templates.ExecuteTemplate(w, "result.html", map[string]string{"message": "Video uploaded successfully", "videoId": response.Id})
 }
