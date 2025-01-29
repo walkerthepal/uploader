@@ -1,7 +1,21 @@
-<div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mt-4" role="alert">
-    <p class="font-bold">Success!</p>
-    <p>{{.message}}</p>
-    {{if .videoId}}
-    <p class="mt-2">Video ID: <span class="font-mono bg-green-200 px-1 rounded">{{.videoId}}</span></p>
+{{if .youtube}}
+<div class="{{if .youtube.success}}bg-green-100 border-green-500{{else}}bg-red-100 border-red-500{{end}} border-l-4 text-gray-700 p-4 mb-4" role="alert">
+    <p class="font-bold">YouTube Upload {{if .youtube.success}}Success{{else}}Failed{{end}}</p>
+    {{if .youtube.success}}
+        <p class="mt-2">Video ID: <span class="font-mono bg-green-200 px-1 rounded">{{.youtube.videoId}}</span></p>
+    {{else}}
+        <p class="text-red-700">Error: {{.youtube.error}}</p>
     {{end}}
 </div>
+{{end}}
+
+{{if .instagram}}
+<div class="{{if .instagram.success}}bg-green-100 border-green-500{{else}}bg-red-100 border-red-500{{end}} border-l-4 text-gray-700 p-4 mb-4" role="alert">
+    <p class="font-bold">Instagram Upload {{if .instagram.success}}Success{{else}}Failed{{end}}</p>
+    {{if .instagram.success}}
+        <p class="mt-2">Reel ID: <span class="font-mono bg-green-200 px-1 rounded">{{.instagram.reelId}}</span></p>
+    {{else}}
+        <p class="text-red-700">Error: {{.instagram.error}}</p>
+    {{end}}
+</div>
+{{end}}

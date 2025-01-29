@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uploader</title>
+    <title>Uploader - Share Videos on YouTube and Instagram</title>
     <script src="https://unpkg.com/htmx.org@1.9.3"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -12,7 +12,6 @@
                 extend: {
                     colors: {
                         primary: '#4F46E5',
-                        secondary: '#10B981',
                     }
                 }
             }
@@ -29,9 +28,18 @@
                     </svg>
                     <span class="ml-2 text-2xl font-bold text-gray-900">Uploader</span>
                 </div>
-                <div>
-                    <a href="/login" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        Login
+                <div class="flex space-x-4">
+                    <a href="/login/youtube" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+                        </svg>
+                        YouTube Login
+                    </a>
+                    <a href="/login/instagram" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500">
+                        <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z"/>
+                        </svg>
+                        Instagram Login
                     </a>
                 </div>
             </div>
@@ -45,21 +53,54 @@
                     Welcome to Uploader
                 </h2>
                 <p class="mt-2 text-center text-sm text-gray-600">
-                    The easiest way to share your videos with the world
+                    Share your videos on YouTube and Instagram
                 </p>
             </div>
+            
             <div class="mt-8 space-y-6">
-                <div class="rounded-md shadow-sm -space-y-px">
-                    <div>
-                        <a href="/login" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                                <svg class="h-5 w-5 text-indigo-500 group-hover:text-indigo-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-                                </svg>
-                            </span>
-                            Sign in to upload
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- YouTube Card -->
+                    <a href="/login/youtube" class="group relative flex flex-col items-center justify-center p-6 border border-gray-300 rounded-lg hover:border-red-500 hover:bg-red-50 transition-all duration-300">
+                        <svg class="h-12 w-12 text-red-600 mb-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+                        </svg>
+                        <h3 class="text-lg font-medium text-gray-900">YouTube</h3>
+                        <p class="mt-2 text-sm text-gray-500 text-center">
+                            Upload videos to your YouTube channel
+                        </p>
+                        <div class="mt-4 inline-flex items-center text-sm font-medium text-red-600">
+                            Get Started
+                            <svg class="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                    </a>
+
+                    <!-- Instagram Card -->
+                    <a href="/login/instagram" class="group relative flex flex-col items-center justify-center p-6 border border-gray-300 rounded-lg hover:border-pink-500 hover:bg-pink-50 transition-all duration-300">
+                        <svg class="h-12 w-12 text-pink-600 mb-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z"/>
+                        </svg>
+                        <h3 class="text-lg font-medium text-gray-900">Instagram</h3>
+                        <p class="mt-2 text-sm text-gray-500 text-center">
+                            Share Reels on your Instagram profile
+                        </p>
+                        <div class="mt-4 inline-flex items-center text-sm font-medium text-pink-600">
+                            Get Started
+                            <svg class="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="text-center mt-8">
+                    <p class="text-base text-gray-600">
+                        Already logged in? 
+                        <a href="/upload" class="font-medium text-primary hover:text-indigo-500">
+                            Go to upload page
                         </a>
-                    </div>
+                    </p>
                 </div>
             </div>
         </div>

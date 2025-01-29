@@ -1,0 +1,10 @@
+{
+  "youtube": {
+    "client_id": "your_youtube_client_id_here",
+    "client_secret": "your_youtube_client_secret_here"
+  },
+  "instagram": {
+    "client_id": "your_instagram_client_id_here",
+    "client_secret": "your_instagram_client_secret_here"
+  }
+}
