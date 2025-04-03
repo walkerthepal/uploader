@@ -1,21 +1,65 @@
-{{if .youtube}}
-<div class="{{if .youtube.success}}bg-green-100 border-green-500{{else}}bg-red-100 border-red-500{{end}} border-l-4 text-gray-700 p-4 mb-4" role="alert">
-    <p class="font-bold">YouTube Upload {{if .youtube.success}}Success{{else}}Failed{{end}}</p>
-    {{if .youtube.success}}
-        <p class="mt-2">Video ID: <span class="font-mono bg-green-200 px-1 rounded">{{.youtube.videoId}}</span></p>
-    {{else}}
-        <p class="text-red-700">Error: {{.youtube.error}}</p>
-    {{end}}
-</div>
-{{end}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Results - Uploader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <div class="flex-grow p-6">
+        <div class="max-w-2xl mx-auto">
+            {{if .youtube}}
+            <div class="{{if .youtube.success}}bg-green-100 border-green-500{{else}}bg-red-100 border-red-500{{end}} border-l-4 text-gray-700 p-4 mb-4" role="alert">
+                <p class="font-bold">YouTube Upload {{if .youtube.success}}Success{{else}}Failed{{end}}</p>
+                {{if .youtube.success}}
+                    <p class="mt-2">Video ID: <span class="font-mono bg-green-200 px-1 rounded">{{.youtube.videoId}}</span></p>
+                {{else}}
+                    <p class="text-red-700">Error: {{.youtube.error}}</p>
+                {{end}}
+            </div>
+            {{end}}
 
-{{if .instagram}}
-<div class="{{if .instagram.success}}bg-green-100 border-green-500{{else}}bg-red-100 border-red-500{{end}} border-l-4 text-gray-700 p-4 mb-4" role="alert">
-    <p class="font-bold">Instagram Upload {{if .instagram.success}}Success{{else}}Failed{{end}}</p>
-    {{if .instagram.success}}
-        <p class="mt-2">Reel ID: <span class="font-mono bg-green-200 px-1 rounded">{{.instagram.reelId}}</span></p>
-    {{else}}
-        <p class="text-red-700">Error: {{.instagram.error}}</p>
-    {{end}}
-</div>
-{{end}}
+            {{if .instagram}}
+            <div class="{{if .instagram.success}}bg-green-100 border-green-500{{else}}bg-red-100 border-red-500{{end}} border-l-4 text-gray-700 p-4 mb-4" role="alert">
+                <p class="font-bold">Instagram Upload {{if .instagram.success}}Success{{else}}Failed{{end}}</p>
+                {{if .instagram.success}}
+                    <p class="mt-2">Reel ID: <span class="font-mono bg-green-200 px-1 rounded">{{.instagram.reelId}}</span></p>
+                {{else}}
+                    <p class="text-red-700">Error: {{.instagram.error}}</p>
+                {{end}}
+            </div>
+            {{end}}
+
+            {{if .tiktok}}
+            <div class="{{if .tiktok.success}}bg-green-100 border-green-500{{else}}bg-red-100 border-red-500{{end}} border-l-4 text-gray-700 p-4 mb-4" role="alert">
+                <p class="font-bold">TikTok Upload {{if .tiktok.success}}Success{{else}}Failed{{end}}</p>
+                {{if .tiktok.success}}
+                    <p class="mt-2">Post ID: <span class="font-mono bg-green-200 px-1 rounded">{{.tiktok.postId}}</span></p>
+                {{else}}
+                    <p class="text-red-700">Error: {{.tiktok.error}}</p>
+                {{end}}
+            </div>
+            {{end}}
+
+            <div class="mt-6 text-center">
+                <a href="/upload" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Upload Another Video
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-white mt-auto">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <p class="text-sm text-gray-500">&copy; 2024 Uploader. All rights reserved.</p>
+                <div class="flex space-x-4 text-xs text-gray-400">
+                    <a href="/terms" class="hover:text-gray-500">Terms of Service</a>
+                    <a href="/privacy" class="hover:text-gray-500">Privacy Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

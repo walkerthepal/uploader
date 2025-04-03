@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+
 	// Remove "sync" import if no longer needed elsewhere
 
 	"golang.org/x/oauth2"
@@ -19,15 +20,20 @@ type Credentials struct {
 		ClientID     string `json:"client_id"`
 		ClientSecret string `json:"client_secret"`
 	} `json:"instagram"`
+	TikTok struct {
+		ClientKey    string `json:"client_key"`
+		ClientSecret string `json:"client_secret"`
+	} `json:"tiktok"`
 }
 
 // Config holds all configuration for the application
 type Config struct {
-	Credentials        *Credentials
-	YouTubeOAuthConfig *oauth2.Config
+	Credentials          *Credentials
+	YouTubeOAuthConfig   *oauth2.Config
 	InstagramOAuthConfig *oauth2.Config
-	RandomState        string
-	TemplatesDir       string
+	TikTokOAuthConfig    *oauth2.Config
+	RandomState          string
+	TemplatesDir         string
 }
 
 var (
@@ -65,7 +71,17 @@ func Load(filename string) (*Config, error) {
 				TokenURL: "https://api.instagram.com/oauth/access_token",
 			},
 		},
-		RandomState:  "random", // Consider making this truly random per request
+		TikTokOAuthConfig: &oauth2.Config{
+			RedirectURL:  "http://localhost:3000/callback/tiktok",
+			ClientID:     creds.TikTok.ClientKey,
+			ClientSecret: creds.TikTok.ClientSecret,
+			Scopes:       []string{"video.upload", "video.publish"},
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  "https://open-api.tiktok.com/platform/oauth/connect/",
+				TokenURL: "https://open-api.tiktok.com/oauth/access_token/",
+			},
+		},
+		RandomState:  "random",    // Consider making this truly random per request
 		TemplatesDir: "templates", // Consider making this configurable
 	}
 

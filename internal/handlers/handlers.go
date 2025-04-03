@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	
+
 	"uploader/internal/config"
 	"uploader/internal/models"
 	"uploader/internal/services"
@@ -29,6 +29,16 @@ func ShowHomePage(w http.ResponseWriter, r *http.Request) {
 	templates.ExecuteTemplate(w, "index.html", nil)
 }
 
+// ShowTermsPage displays the terms of service page
+func ShowTermsPage(w http.ResponseWriter, r *http.Request) {
+	templates.ExecuteTemplate(w, "terms.html", nil)
+}
+
+// ShowPrivacyPage displays the privacy policy page
+func ShowPrivacyPage(w http.ResponseWriter, r *http.Request) {
+	templates.ExecuteTemplate(w, "privacy.html", nil)
+}
+
 // HandleYoutubeLogin initiates the YouTube OAuth flow
 func HandleYoutubeLogin(w http.ResponseWriter, r *http.Request) {
 	cfg := config.Get()
@@ -40,6 +50,13 @@ func HandleYoutubeLogin(w http.ResponseWriter, r *http.Request) {
 func HandleInstagramLogin(w http.ResponseWriter, r *http.Request) {
 	cfg := config.Get()
 	url := cfg.InstagramOAuthConfig.AuthCodeURL(cfg.RandomState)
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+
+// HandleTikTokLogin initiates the TikTok OAuth flow
+func HandleTikTokLogin(w http.ResponseWriter, r *http.Request) {
+	cfg := config.Get()
+	url := cfg.TikTokOAuthConfig.AuthCodeURL(cfg.RandomState)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
@@ -106,6 +123,38 @@ func HandleInstagramCallback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/upload", http.StatusSeeOther)
 }
 
+// HandleTikTokCallback processes the TikTok OAuth callback
+func HandleTikTokCallback(w http.ResponseWriter, r *http.Request) {
+	cfg := config.Get()
+	if r.URL.Query().Get("state") != cfg.RandomState {
+		http.Error(w, "Invalid state parameter", http.StatusBadRequest)
+		return
+	}
+
+	token, err := cfg.TikTokOAuthConfig.Exchange(context.Background(), r.URL.Query().Get("code"))
+	if err != nil {
+		http.Error(w, "Code exchange failed", http.StatusInternalServerError)
+		return
+	}
+
+	// Save the TikTok token
+	tokenFile, err := json.Marshal(token)
+	if err != nil {
+		log.Printf("Unable to marshal TikTok token: %v", err)
+		http.Error(w, "Failed to process authentication token", http.StatusInternalServerError)
+		return
+	}
+
+	err = os.WriteFile("tiktok_token.json", tokenFile, 0600)
+	if err != nil {
+		log.Printf("Unable to write TikTok token to file: %v", err)
+		http.Error(w, "Failed to save authentication token", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/upload", http.StatusSeeOther)
+}
+
 // ShowUploadPage displays the upload form
 func ShowUploadPage(w http.ResponseWriter, r *http.Request) {
 	templates.ExecuteTemplate(w, "upload.html", nil)
@@ -150,6 +199,13 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				result.Instagram.Success = false
 				result.Instagram.Error = err.Error()
+			}
+		case "tiktok":
+			err := services.UploadToTikTok(file, header, r.FormValue("tiktokCaption"),
+				mainCaption, result)
+			if err != nil {
+				result.TikTok.Success = false
+				result.TikTok.Error = err.Error()
 			}
 		}
 	}

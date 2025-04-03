@@ -51,7 +51,7 @@ func UploadToInstagram(file multipart.File, header *multipart.FileHeader,
 	}
 
 	// Step 1: Create container for the media
-	containerURL := "https://graph.instagram.com/v12.0/me/media"
+	containerURL := "https://graph.instagram.com/v22.0/me/media"
 	containerData := map[string]string{
 		"media_type": "REELS",
 		"video_url":  tempFile.Name(),
@@ -81,7 +81,7 @@ func UploadToInstagram(file multipart.File, header *multipart.FileHeader,
 
 	// Step 2: Poll for status until media is ready
 	mediaID := containerResponse.ID
-	statusURL := fmt.Sprintf("https://graph.instagram.com/v12.0/%s", mediaID)
+	statusURL := fmt.Sprintf("https://graph.instagram.com/v22.0/%s", mediaID)
 
 	for i := 0; i < 30; i++ { // Poll for up to 5 minutes
 		time.Sleep(10 * time.Second)

@@ -49,23 +49,22 @@ func main() {
 			log.Printf("DEBUG: os.Stat failed with an unexpected error type for relative path '%s'.", relativePath)
 		}
 
-        // Also try stating the absolute path IF we could resolve it
-        if absPath != "[unknown]" {
-             log.Printf("DEBUG: Running os.Stat on absolute path '%s'...", absPath)
-             _, statErrAbs := os.Stat(absPath)
-              if statErrAbs != nil {
-                    log.Printf("DEBUG: os.Stat on absolute path FAILED: %v", statErrAbs)
-              } else {
-                   log.Printf("DEBUG: os.Stat on absolute path SUCCEEDED.") // This would be very strange if relative failed
-              }
-        }
+		// Also try stating the absolute path IF we could resolve it
+		if absPath != "[unknown]" {
+			log.Printf("DEBUG: Running os.Stat on absolute path '%s'...", absPath)
+			_, statErrAbs := os.Stat(absPath)
+			if statErrAbs != nil {
+				log.Printf("DEBUG: os.Stat on absolute path FAILED: %v", statErrAbs)
+			} else {
+				log.Printf("DEBUG: os.Stat on absolute path SUCCEEDED.") // This would be very strange if relative failed
+			}
+		}
 
 	} else {
 		// This case should NOT happen based on your error, but good to have
 		log.Printf("DEBUG: os.Stat SUCCEEDED for relative path '%s'. File size: %d, Mode: %s", relativePath, fileInfo.Size(), fileInfo.Mode())
 	}
 	// --- End Enhanced Debugging ---
-
 
 	// Now, attempt the load again (which we expect to fail based on prior runs)
 	log.Printf("Attempting to load configuration directly from: %s", relativePath)
@@ -80,16 +79,26 @@ func main() {
 
 	// Create a new router
 	r := chi.NewRouter()
-	
+
 	// Apply middleware
 	r.Use(middleware.Logger)
 
 	// Register routes
 	r.Get("/", handlers.ShowHomePage)
+
+	// Legal pages
+	r.Get("/terms", handlers.ShowTermsPage)
+	r.Get("/privacy", handlers.ShowPrivacyPage)
+
+	// Authentication routes
 	r.Get("/login/youtube", handlers.HandleYoutubeLogin)
 	r.Get("/login/instagram", handlers.HandleInstagramLogin)
+	r.Get("/login/tiktok", handlers.HandleTikTokLogin)
 	r.Get("/callback/youtube", handlers.HandleYoutubeCallback)
 	r.Get("/callback/instagram", handlers.HandleInstagramCallback)
+	r.Get("/callback/tiktok", handlers.HandleTikTokCallback)
+
+	// Upload routes
 	r.Get("/upload", handlers.ShowUploadPage)
 	r.Post("/upload", handlers.HandleUpload)
 

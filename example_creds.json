@@ -6,5 +6,9 @@
   "instagram": {
     "client_id": "your_instagram_client_id_here",
     "client_secret": "your_instagram_client_secret_here"
+  },
+  "tiktok": {
+    "client_key": "your_tiktok_client_key_here",
+    "client_secret": "your_tiktok_client_secret_here"
   }
 }
