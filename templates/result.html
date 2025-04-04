@@ -5,19 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Results - Uploader</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="/static/js/dark_mode.js" defer></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
-    <header class="bg-white shadow-sm">
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen flex flex-col">
+    <header class="bg-white dark:bg-gray-800 shadow-sm">
         <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex justify-between items-center">
                 <div class="flex items-center">
                     <a href="/" class="flex items-center">
                         <img src="/static/images/gramophone_logo.svg" alt="uploader logo" class="h-10 w-10">
-                        <span class="ml-2 text-2xl font-bold text-gray-900">uploader</span>
+                        <span class="ml-2 text-2xl font-bold text-gray-900 dark:text-white">uploader</span>
                     </a>
                 </div>
-                <div>
-                    <a href="/" class="text-gray-600 hover:text-primary">Home</a>
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary">Home</a>
+                    <!-- Dark Mode Toggle Button -->
+                    <button type="button" class="theme-toggle inline-flex items-center justify-center p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary focus:outline-none" aria-label="Toggle dark mode">
+                        <span class="theme-toggle-icon">
+                            <!-- Sun icon (shows in dark mode) -->
+                            <svg class="sun-icon w-5 h-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <!-- Moon icon (shows in light mode) -->
+                            <svg class="moon-icon w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                        </span>
+                    </button>
                 </div>
             </div>
         </nav>
@@ -25,53 +51,53 @@
     <div class="flex-grow p-6">
         <div class="max-w-2xl mx-auto">
             {{if .youtube}}
-            <div class="{{if .youtube.success}}bg-green-100 border-green-500{{else}}bg-red-100 border-red-500{{end}} border-l-4 text-gray-700 p-4 mb-4" role="alert">
+            <div class="{{if .youtube.success}}bg-green-100 dark:bg-green-900 border-green-500{{else}}bg-red-100 dark:bg-red-900 border-red-500{{end}} border-l-4 text-gray-700 dark:text-gray-200 p-4 mb-4" role="alert">
                 <p class="font-bold">YouTube Upload {{if .youtube.success}}Success{{else}}Failed{{end}}</p>
                 {{if .youtube.success}}
-                    <p class="mt-2">Video ID: <span class="font-mono bg-green-200 px-1 rounded">{{.youtube.videoId}}</span></p>
+                    <p class="mt-2">Video ID: <span class="font-mono bg-green-200 dark:bg-green-800 px-1 rounded">{{.youtube.videoId}}</span></p>
                 {{else}}
-                    <p class="text-red-700">Error: {{.youtube.error}}</p>
+                    <p class="text-red-700 dark:text-red-400">Error: {{.youtube.error}}</p>
                 {{end}}
             </div>
             {{end}}
 
             {{if .instagram}}
-            <div class="{{if .instagram.success}}bg-green-100 border-green-500{{else}}bg-red-100 border-red-500{{end}} border-l-4 text-gray-700 p-4 mb-4" role="alert">
+            <div class="{{if .instagram.success}}bg-green-100 dark:bg-green-900 border-green-500{{else}}bg-red-100 dark:bg-red-900 border-red-500{{end}} border-l-4 text-gray-700 dark:text-gray-200 p-4 mb-4" role="alert">
                 <p class="font-bold">Instagram Upload {{if .instagram.success}}Success{{else}}Failed{{end}}</p>
                 {{if .instagram.success}}
-                    <p class="mt-2">Reel ID: <span class="font-mono bg-green-200 px-1 rounded">{{.instagram.reelId}}</span></p>
+                    <p class="mt-2">Reel ID: <span class="font-mono bg-green-200 dark:bg-green-800 px-1 rounded">{{.instagram.reelId}}</span></p>
                 {{else}}
-                    <p class="text-red-700">Error: {{.instagram.error}}</p>
+                    <p class="text-red-700 dark:text-red-400">Error: {{.instagram.error}}</p>
                 {{end}}
             </div>
             {{end}}
 
             {{if .tiktok}}
-            <div class="{{if .tiktok.success}}bg-green-100 border-green-500{{else}}bg-red-100 border-red-500{{end}} border-l-4 text-gray-700 p-4 mb-4" role="alert">
+            <div class="{{if .tiktok.success}}bg-green-100 dark:bg-green-900 border-green-500{{else}}bg-red-100 dark:bg-red-900 border-red-500{{end}} border-l-4 text-gray-700 dark:text-gray-200 p-4 mb-4" role="alert">
                 <p class="font-bold">TikTok Upload {{if .tiktok.success}}Success{{else}}Failed{{end}}</p>
                 {{if .tiktok.success}}
-                    <p class="mt-2">Post ID: <span class="font-mono bg-green-200 px-1 rounded">{{.tiktok.postId}}</span></p>
+                    <p class="mt-2">Post ID: <span class="font-mono bg-green-200 dark:bg-green-800 px-1 rounded">{{.tiktok.postId}}</span></p>
                 {{else}}
-                    <p class="text-red-700">Error: {{.tiktok.error}}</p>
+                    <p class="text-red-700 dark:text-red-400">Error: {{.tiktok.error}}</p>
                 {{end}}
             </div>
             {{end}}
 
             <div class="mt-6 text-center">
-                <a href="/upload" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <a href="/upload" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     Upload Another Video
                 </a>
             </div>
         </div>
     </div>
 
-    <footer class="bg-white mt-auto">
+    <footer class="bg-white dark:bg-gray-800 mt-auto">
         <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center">
-                <p class="text-sm text-gray-500">&copy; 2024 Uploader. All rights reserved.</p>
-                <div class="flex space-x-4 text-xs text-gray-400">
-                    <a href="/terms" class="hover:text-gray-500">Terms of Service</a>
-                    <a href="/privacy" class="hover:text-gray-500">Privacy Policy</a>
+                <p class="text-sm text-gray-500 dark:text-gray-400">&copy; 2024 Uploader. All rights reserved.</p>
+                <div class="flex space-x-4 text-xs text-gray-400 dark:text-gray-500">
+                    <a href="/terms" class="hover:text-gray-500 dark:hover:text-gray-300">Terms of Service</a>
+                    <a href="/privacy" class="hover:text-gray-500 dark:hover:text-gray-300">Privacy Policy</a>
                 </div>
             </div>
         </div>
