@@ -101,6 +101,10 @@ func main() {
 	// Upload routes
 	r.Get("/upload", handlers.ShowUploadPage)
 	r.Post("/upload", handlers.HandleUpload)
+	
+	//Use for logo
+	fileServer := http.FileServer(http.Dir("./static"))
+	r.Handle("/static/*", http.StripPrefix("/static/", fileServer))
 
 	// Start the server
 	log.Println("Server is running on :3000")
