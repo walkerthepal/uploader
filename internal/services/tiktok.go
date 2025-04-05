@@ -11,11 +11,9 @@ import (
 	"time"
 
 	"uploader/internal/models"
-
-	"golang.org/x/oauth2"
 )
 
-// UploadToTikTok uploads a video to TikTok
+// UploadToTikTok uploads a video to TikTok using the v2 API
 func UploadToTikTok(file multipart.File, header *multipart.FileHeader,
 	caption, mainCaption string, result *models.UploadResult) error {
 
@@ -25,10 +23,10 @@ func UploadToTikTok(file multipart.File, header *multipart.FileHeader,
 		return fmt.Errorf("user not authenticated with TikTok")
 	}
 
-	var token oauth2.Token
-	err = json.Unmarshal(tokenFile, &token)
+	var tokenResponse models.TikTokTokenResponse
+	err = json.Unmarshal(tokenFile, &tokenResponse)
 	if err != nil {
-		return fmt.Errorf("failed to parse TikTok authentication token")
+		return fmt.Errorf("failed to parse TikTok authentication token: %v", err)
 	}
 
 	// Use main caption if no specific caption provided
@@ -55,48 +53,60 @@ func UploadToTikTok(file multipart.File, header *multipart.FileHeader,
 		return fmt.Errorf("failed to reset file position: %v", err)
 	}
 
-	// Step 1: Initiate upload
-	initiateURL := "https://open.tiktokapis.com/v2/video/upload/"
-
-	// Create request for file upload initiation
-	req, err := http.NewRequest("POST", initiateURL, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create initiate request: %v", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to initiate upload: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to initiate upload, status: %d, response: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	var initiateResponse struct {
-		Data struct {
-			UploadURL string `json:"upload_url"`
-			VideoID   string `json:"video_id"`
-		} `json:"data"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&initiateResponse); err != nil {
-		return fmt.Errorf("failed to decode initiate response: %v", err)
-	}
-
-	// Step 2: Upload video to the provided URL
+	// Read entire file into memory
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %v", err)
 	}
 
-	uploadReq, err := http.NewRequest("PUT", initiateResponse.Data.UploadURL, bytes.NewReader(fileBytes))
+	// Step 1: Get an upload URL using the new API
+	client := &http.Client{Timeout: 30 * time.Second}
+
+	createUploadURLEndpoint := "https://open.tiktokapis.com/v2/post/publish/creator_upload/init/"
+
+	requestData := map[string]interface{}{
+		"source_info": map[string]string{
+			"source": "PULL_FROM_URL",
+		},
+	}
+
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		return fmt.Errorf("failed to create request data: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", createUploadURLEndpoint, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %v", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+tokenResponse.AccessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to get upload URL: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to get upload URL, status: %d, response: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var uploadURLResponse struct {
+		Data struct {
+			UploadURL string `json:"upload_url"`
+			PublishID string `json:"publish_id"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&uploadURLResponse); err != nil {
+		return fmt.Errorf("failed to decode upload URL response: %v", err)
+	}
+
+	// Step 2: Upload the video to the provided URL
+	uploadReq, err := http.NewRequest("PUT", uploadURLResponse.Data.UploadURL, bytes.NewReader(fileBytes))
 	if err != nil {
 		return fmt.Errorf("failed to create upload request: %v", err)
 	}
@@ -115,12 +125,17 @@ func UploadToTikTok(file multipart.File, header *multipart.FileHeader,
 	}
 
 	// Step 3: Create post with the uploaded video
-	createPostURL := "https://open.tiktokapis.com/v2/video/publish/"
+	createPostURL := "https://open.tiktokapis.com/v2/post/publish/creator_upload/publish/"
 
 	postData := map[string]interface{}{
-		"video_id":      initiateResponse.Data.VideoID,
-		"text":          caption,
-		"privacy_level": "self_only", // Start with private visibility
+		"publish_id": uploadURLResponse.Data.PublishID,
+		"post_info": map[string]interface{}{
+			"title":           caption,
+			"privacy_level":   "SELF_ONLY", // Start with private visibility
+			"disable_duet":    false,
+			"disable_comment": false,
+			"disable_stitch":  false,
+		},
 	}
 
 	postJSON, _ := json.Marshal(postData)
@@ -129,7 +144,7 @@ func UploadToTikTok(file multipart.File, header *multipart.FileHeader,
 		return fmt.Errorf("failed to create post request: %v", err)
 	}
 
-	postReq.Header.Set("Authorization", "Bearer "+token.AccessToken)
+	postReq.Header.Set("Authorization", "Bearer "+tokenResponse.AccessToken)
 	postReq.Header.Set("Content-Type", "application/json")
 
 	postResp, err := client.Do(postReq)

@@ -72,13 +72,13 @@ func Load(filename string) (*Config, error) {
 			},
 		},
 		TikTokOAuthConfig: &oauth2.Config{
-			RedirectURL:  "http://localhost:3000/callback/tiktok",
+			RedirectURL:  "https://6368-136-56-177-106.ngrok-free.app/callback/tiktok",
 			ClientID:     creds.TikTok.ClientKey,
 			ClientSecret: creds.TikTok.ClientSecret,
-			Scopes:       []string{"video.upload", "video.publish"},
+			Scopes:       []string{"user.info.basic", "video.upload", "video.publish"},
 			Endpoint: oauth2.Endpoint{
-				AuthURL:  "https://open-api.tiktok.com/platform/oauth/connect/",
-				TokenURL: "https://open-api.tiktok.com/oauth/access_token/",
+				AuthURL:  "https://www.tiktok.com/v2/auth/authorize/",
+				TokenURL: "https://open.tiktokapis.com/v2/oauth/token/",
 			},
 		},
 		RandomState:  "random",    // Consider making this truly random per request
