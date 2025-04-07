@@ -62,17 +62,19 @@ func Load(filename string) (*Config, error) {
 			Endpoint:     google.Endpoint,
 		},
 		InstagramOAuthConfig: &oauth2.Config{
-			RedirectURL:  "http://localhost:3000/callback/instagram",
+			RedirectURL:  "https://daa7-136-56-177-106.ngrok-free.app/callback/instagram",
 			ClientID:     creds.Instagram.ClientID,
 			ClientSecret: creds.Instagram.ClientSecret,
-			Scopes:       []string{"instagram_content_publish"}, // Check if this scope is correct for basic token
+			// Update scopes to match what's configured in FB dev portal
+			Scopes: []string{"user_profile", "user_media"},
 			Endpoint: oauth2.Endpoint{
+				// Update to use the Graph API endpoints
 				AuthURL:  "https://api.instagram.com/oauth/authorize",
 				TokenURL: "https://api.instagram.com/oauth/access_token",
 			},
 		},
 		TikTokOAuthConfig: &oauth2.Config{
-			RedirectURL:  "https://6368-136-56-177-106.ngrok-free.app/callback/tiktok",
+			RedirectURL:  "https://daa7-136-56-177-106.ngrok-free.app/callback/tiktok",
 			ClientID:     creds.TikTok.ClientKey,
 			ClientSecret: creds.TikTok.ClientSecret,
 			Scopes:       []string{"user.info.basic", "video.upload", "video.publish"},
