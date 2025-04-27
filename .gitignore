@@ -5,3 +5,5 @@ instagram_token.json
 tiktok_token.json
 uploader-key.pem
 uploader.pem
+.DS_Store
+

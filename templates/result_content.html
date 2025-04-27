@@ -1,0 +1,42 @@
+{{/* Check if YouTube was selected */}}
+{{if .SelectedPlatforms.youtube}}
+  {{/* Access results via .Result */}}
+  <div class="{{if .Result.YouTube.Success}}bg-green-100 dark:bg-green-900 border-green-500{{else}}bg-red-100 dark:bg-red-900 border-red-500{{end}} border-l-4 text-gray-700 dark:text-gray-200 p-4 mb-4" role="alert">
+      <p class="font-bold">YouTube Upload {{if .Result.YouTube.Success}}Success{{else}}Failed{{end}}</p>
+      {{if .Result.YouTube.Success}}
+          <p class="mt-2">Video ID: <span class="font-mono bg-green-200 dark:bg-green-800 px-1 rounded">{{.Result.YouTube.VideoID}}</span></p>
+      {{else}}
+          <p class="text-red-700 dark:text-red-400">Error: {{.Result.YouTube.Error}}</p>
+      {{end}}
+  </div>
+{{end}}
+
+{{/* Check if Instagram was selected */}}
+{{if .SelectedPlatforms.instagram}}
+  <div class="{{if .Result.Instagram.Success}}bg-green-100 dark:bg-green-900 border-green-500{{else}}bg-red-100 dark:bg-red-900 border-red-500{{end}} border-l-4 text-gray-700 dark:text-gray-200 p-4 mb-4" role="alert">
+      <p class="font-bold">Instagram Upload {{if .Result.Instagram.Success}}Success{{else}}Failed{{end}}</p>
+      {{if .Result.Instagram.Success}}
+          <p class="mt-2">Reel ID: <span class="font-mono bg-green-200 dark:bg-green-800 px-1 rounded">{{.Result.Instagram.ReelID}}</span></p>
+      {{else}}
+          <p class="text-red-700 dark:text-red-400">Error: {{.Result.Instagram.Error}}</p>
+      {{end}}
+  </div>
+{{end}}
+
+{{/* Check if TikTok was selected */}}
+{{if .SelectedPlatforms.tiktok}}
+  <div class="{{if .Result.TikTok.Success}}bg-green-100 dark:bg-green-900 border-green-500{{else}}bg-red-100 dark:bg-red-900 border-red-500{{end}} border-l-4 text-gray-700 dark:text-gray-200 p-4 mb-4" role="alert">
+      <p class="font-bold">TikTok Upload {{if .Result.TikTok.Success}}Success{{else}}Failed{{end}}</p>
+      {{if .Result.TikTok.Success}}
+          <p class="mt-2">Post ID: <span class="font-mono bg-green-200 dark:bg-green-800 px-1 rounded">{{.Result.TikTok.PostID}}</span></p>
+      {{else}}
+          <p class="text-red-700 dark:text-red-400">Error: {{.Result.TikTok.Error}}</p>
+      {{end}}
+  </div>
+{{end}}
+
+<div class="mt-6 text-center">
+    <a href="/upload" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        Upload Another Video
+    </a>
+</div>
