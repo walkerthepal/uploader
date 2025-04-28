@@ -62,7 +62,7 @@ func Load(filename string) (*Config, error) {
 			Endpoint:     google.Endpoint,
 		},
 		InstagramOAuthConfig: &oauth2.Config{
-			RedirectURL:  "https://b2d1-136-56-177-106.ngrok-free.app/callback/instagram",
+			RedirectURL:  "https://2b21-136-56-177-106.ngrok-free.app/callback/instagram",
 			ClientID:     creds.Instagram.ClientID,
 			ClientSecret: creds.Instagram.ClientSecret,
 			// Update scopes to match what's configured in FB dev portal
@@ -74,7 +74,7 @@ func Load(filename string) (*Config, error) {
 			},
 		},
 		TikTokOAuthConfig: &oauth2.Config{
-			RedirectURL:  "https://b2d1-136-56-177-106.ngrok-free.app/callback/tiktok",
+			RedirectURL:  "https://2b21-136-56-177-106.ngrok-free.app/callback/tiktok",
 			ClientID:     creds.TikTok.ClientKey,
 			ClientSecret: creds.TikTok.ClientSecret,
 			Scopes:       []string{"user.info.basic", "video.upload", "video.publish"},

@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"bytes"
-	"context"
+	"context" // Ensure context is imported
 	"encoding/json"
 	"html/template"
 	"io"
@@ -138,8 +138,6 @@ func HandleInstagramCallback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/upload", http.StatusSeeOther)
 }
 
-// Update HandleTikTokCallback in handlers.go
-
 // HandleTikTokCallback processes the TikTok OAuth callback
 func HandleTikTokCallback(w http.ResponseWriter, r *http.Request) {
 	cfg := config.Get()
@@ -163,7 +161,8 @@ func HandleTikTokCallback(w http.ResponseWriter, r *http.Request) {
 	data.Set("grant_type", "authorization_code")
 	data.Set("redirect_uri", cfg.TikTokOAuthConfig.RedirectURL)
 
-	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data.Encode()))
+	// Use request's context for the token exchange request
+	req, err := http.NewRequestWithContext(r.Context(), "POST", tokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
 		log.Printf("Failed to create token request: %v", err)
 		http.Error(w, "Failed to process authentication", http.StatusInternalServerError)
@@ -219,107 +218,117 @@ func ShowUploadPage(w http.ResponseWriter, r *http.Request) {
 
 // HandleUpload processes the upload form submission
 func HandleUpload(w http.ResponseWriter, r *http.Request) {
-	result := &models.UploadResult{} // Keep this initialization
+	result := &models.UploadResult{} // Initialize result struct
 
-	// Parse the multipart form
-	err := r.ParseMultipartForm(32 << 20) // 32MB max
+	// Parse the multipart form (consider increasing max memory if handling very large uploads simultaneously)
+	// Using 32MB here allows form values up to 32MB in memory, file parts are streamed.
+	err := r.ParseMultipartForm(32 << 20) // 32MB max memory for non-file parts
 	if err != nil {
-		log.Printf("Failed to parse form: %v", err)
-		http.Error(w, "Failed to parse form: file may be too large", http.StatusBadRequest)
+		log.Printf("Failed to parse multipart form: %v", err)
+		http.Error(w, "Failed to parse form (file might be too large or form malformed)", http.StatusBadRequest)
 		return
 	}
 
 	// Get the platforms selected for upload
-	platforms := r.Form["platforms"] // This is a slice of strings like ["youtube", "tiktok"]
+	platforms := r.Form["platforms"] // Slice like ["youtube", "tiktok"]
 	if len(platforms) == 0 {
 		http.Error(w, "No platforms selected for upload", http.StatusBadRequest)
 		return
 	}
 
-	// *** NEW: Create a map to easily check selected platforms in the template ***
+	// Create a map to easily check selected platforms in the template
 	selectedPlatformsMap := make(map[string]bool)
 	for _, p := range platforms {
 		selectedPlatformsMap[p] = true
 	}
 
+	// Get the uploaded video file
 	file, header, err := r.FormFile("video")
 	if err != nil {
-		log.Printf("Failed to get video file: %v", err)
+		log.Printf("Failed to get video file from form: %v", err)
 		http.Error(w, "Failed to get video file: please ensure a valid video file is selected", http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
+	defer file.Close() // Ensure the file part is closed
 
-	// Log file details for debugging
+	// Log file details
 	log.Printf("Received file: %s, size: %d bytes", header.Filename, header.Size)
 
+	// Get the main caption
 	mainCaption := r.FormValue("mainCaption")
 
-	// Handle uploads to selected platforms (Loop remains the same)
+	// Get the request context to pass down to service functions
+	ctx := r.Context()
+
+	// Handle uploads to selected platforms
 	for _, platform := range platforms {
 		// Reset file position before each platform upload attempt
+		// This is crucial because each service function will read the file.
 		if _, err := file.Seek(0, 0); err != nil {
 			log.Printf("CRITICAL: Failed to reset file position before uploading to %s: %v", platform, err)
-			// Decide how to handle this - maybe skip this platform and record an error?
-			// For now, we'll log and continue, but the subsequent upload might fail or use wrong data.
-			// Assigning a specific error might be better:
+			// Record an error for this platform and skip it
 			switch platform {
 			case "youtube":
 				result.YouTube.Success = false
-				result.YouTube.Error = "Internal server error: failed to prepare file"
+				result.YouTube.Error = "Internal server error: failed to prepare file for upload"
 			case "instagram":
 				result.Instagram.Success = false
-				result.Instagram.Error = "Internal server error: failed to prepare file"
+				result.Instagram.Error = "Internal server error: failed to prepare file for upload"
 			case "tiktok":
 				result.TikTok.Success = false
-				result.TikTok.Error = "Internal server error: failed to prepare file"
+				result.TikTok.Error = "Internal server error: failed to prepare file for upload"
 			}
 			continue // Skip to the next platform
 		}
 
+		// Process upload for the current platform
 		switch platform {
 		case "youtube":
 			title := r.FormValue("youtubeTitle")
 			if title == "" {
+				log.Printf("Skipping YouTube upload: Title is required.")
 				result.YouTube.Success = false
 				result.YouTube.Error = "YouTube title is required"
 				continue // Skip YouTube upload if title missing
 			}
-			err := services.UploadToYoutube(file, header, title,
-				r.FormValue("youtubeDescription"), mainCaption, result)
+			description := r.FormValue("youtubeDescription")
+			// Note: UploadToYoutube doesn't currently accept context, but could be added
+			err := services.UploadToYoutube(file, header, title, description, mainCaption, result)
 			if err != nil {
 				log.Printf("YouTube upload failed: %v", err)
-				result.YouTube.Success = false
-				result.YouTube.Error = err.Error()
-				// No need to assign result fields here, UploadToYoutube does it
+				// Error details are already set within UploadToYoutube
 			}
 		case "instagram":
-			err := services.UploadToInstagram(file, header, r.FormValue("instagramCaption"),
-				mainCaption, result)
+			instagramCaption := r.FormValue("instagramCaption")
+			// Note: UploadToInstagram doesn't currently accept context, but could be added
+			err := services.UploadToInstagram(file, header, instagramCaption, mainCaption, result)
 			if err != nil {
 				log.Printf("Instagram upload failed: %v", err)
-				// No need to assign result fields here, UploadToInstagram does it
+				// Error details are already set within UploadToInstagram
 			}
 		case "tiktok":
-			err := services.UploadToTikTok(file, header, r.FormValue("tiktokCaption"),
-				mainCaption, result)
+			tiktokCaption := r.FormValue("tiktokCaption")
+			// *** FIX: Pass the request context (ctx) as the first argument ***
+			err := services.UploadToTikTok(ctx, file, header, tiktokCaption, mainCaption, result)
 			if err != nil {
 				log.Printf("TikTok upload failed: %v", err)
-				// No need to assign result fields here, UploadToTikTok does it
+				// Error details are already set within UploadToTikTok
 			}
 		}
 	}
 
-	// Create a buffer to store the result HTML
+	// --- Render the result ---
+
+	// Create a buffer to store the result HTML content
 	var buf bytes.Buffer
 
-	// *** NEW: Create data structure to pass both results and selected platforms ***
+	// Prepare data structure for the template
 	templateData := map[string]interface{}{
 		"Result":            result,               // Pass the result struct
 		"SelectedPlatforms": selectedPlatformsMap, // Pass the map of selected platforms
 	}
 
-	// *** UPDATED: Execute template with the combined data ***
+	// Execute the result content template
 	if err := templates.ExecuteTemplate(&buf, "result_content.html", templateData); err != nil {
 		log.Printf("Failed to execute result template: %v", err)
 		// Send a generic error response, but log the detailed one
@@ -327,6 +336,8 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Write the result to the response
+	// Write the generated HTML fragment to the response
+	// This is intended for use with HTMX, replacing the #result div content
+	w.Header().Set("Content-Type", "text/html; charset=utf-8") // Set appropriate content type
 	w.Write(buf.Bytes())
 }
