@@ -2,13 +2,11 @@ package services
 
 import (
 	"bytes"
-	"context" // Import context package
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log" // Added for potential debug logging
-
-	// "math" // No longer needed as we use integer division
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -17,114 +15,120 @@ import (
 	"uploader/internal/models"
 )
 
-// Define chunk size (e.g., 32MB). TikTok recommends >= 5MB. Max 64MB is common.
-const defaultTikTokChunkSize = 32 * 1024 * 1024 // 32 MB
-
-// UploadToTikTok uploads a video to TikTok using the v2 API Direct Post method with chunking.
+// UploadToTikTok uploads a video to TikTok using the v2 API Direct Post method
 func UploadToTikTok(ctx context.Context, file multipart.File, header *multipart.FileHeader,
 	caption, mainCaption string, result *models.UploadResult) error {
 
-	// --- 1. Authentication and Setup ---
+	// If no specific caption is provided, use the main caption
+	if caption == "" {
+		caption = mainCaption
+	}
+
+	// --- 1. Read authentication token ---
 	tokenFile, err := os.ReadFile("tiktok_token.json")
 	if err != nil {
 		result.TikTok.Success = false
-		result.TikTok.Error = fmt.Sprintf("user not authenticated with TikTok: %v", err)
+		result.TikTok.Error = "User not authenticated with TikTok"
 		return fmt.Errorf("user not authenticated with TikTok: %v", err)
 	}
+
 	var tokenResponse models.TikTokTokenResponse
 	err = json.Unmarshal(tokenFile, &tokenResponse)
 	if err != nil {
 		result.TikTok.Success = false
-		result.TikTok.Error = fmt.Sprintf("failed to parse TikTok authentication token: %v", err)
+		result.TikTok.Error = "Failed to parse TikTok authentication token"
 		return fmt.Errorf("failed to parse TikTok authentication token: %v", err)
 	}
-	if caption == "" {
-		caption = mainCaption
-	}
+
+	// --- 2. Calculate file size and chunk information ---
 	fileSize := header.Size
 	if fileSize == 0 {
 		result.TikTok.Success = false
-		result.TikTok.Error = "cannot upload empty file"
+		result.TikTok.Error = "Cannot upload empty file"
 		return fmt.Errorf("cannot upload empty file")
 	}
 
-	// --- 2. Chunking Calculation (Using 32MB Chunk Size) ---
-	actualChunkSize := int64(defaultTikTokChunkSize)
-	// Calculate total chunks using integer division (rounds down)
-	totalChunks := int(fileSize / actualChunkSize)
-	// If there's a remainder, we need one more chunk
-	if fileSize%actualChunkSize != 0 {
-		totalChunks++
-	}
-	// Ensure totalChunks is at least 1
-	if totalChunks == 0 {
+	// Try using integer division only with no remainder handling
+	// In TikTok's example: 50,000,123 ÷ 10,000,000 = 5.0000123, but they use 5 chunks
+	const exactChunkSize = 10 * 1000 * 1000 // exactly 10,000,000 bytes as in their docs
+
+	// Calculate total chunks using ONLY integer division (truncate decimal part)
+	totalChunks := int(fileSize / exactChunkSize)
+
+	// Ensure we have at least 1 chunk
+	if totalChunks < 1 {
 		totalChunks = 1
 	}
 
-	// --- 3. Initialization Request (Get Upload URL) ---
-	initClient := &http.Client{Timeout: 60 * time.Second}
-	createUploadURLEndpoint := "https://open.tiktokapis.com/v2/post/publish/video/init/"
-	requestData := map[string]interface{}{
-		"source_info": map[string]interface{}{
-			"source":            "FILE_UPLOAD",
-			"video_size":        fileSize,
-			"chunk_size":        actualChunkSize,    // Now 32MB
-			"total_chunk_count": int64(totalChunks), // Now calculated based on 32MB chunks (should be 2)
-		},
+	log.Printf("TikTok upload details: File size = %d bytes, Chunk size = %d bytes, Total chunks = %d",
+		fileSize, exactChunkSize, totalChunks)
+
+	// --- 3. Initialize upload (get upload URL) ---
+	client := &http.Client{Timeout: 60 * time.Second}
+	initEndpoint := "https://open.tiktokapis.com/v2/post/publish/video/init/"
+
+	initRequest := map[string]interface{}{
 		"post_info": map[string]interface{}{
 			"title":           caption,
-			"privacy_level":   "SELF_ONLY",
+			"privacy_level":   "SELF_ONLY", // Start with private visibility
 			"disable_duet":    false,
 			"disable_comment": false,
 			"disable_stitch":  false,
 		},
+		"source_info": map[string]interface{}{
+			"source":            "FILE_UPLOAD",
+			"video_size":        fileSize,
+			"chunk_size":        exactChunkSize,
+			"total_chunk_count": totalChunks,
+		},
 	}
 
-	// Log the request data being sent for debugging
-	jsonDataLog, _ := json.MarshalIndent(requestData, "", "  ")
-	log.Printf("Sending TikTok init request data:\n%s", string(jsonDataLog))
-
-	jsonData, err := json.Marshal(requestData)
+	initJSON, err := json.Marshal(initRequest)
 	if err != nil {
 		result.TikTok.Success = false
-		result.TikTok.Error = fmt.Sprintf("failed to marshal init request data: %v", err)
-		return fmt.Errorf("failed to marshal init request data: %v", err)
+		result.TikTok.Error = "Failed to create initialization request"
+		return fmt.Errorf("failed to create initialization request: %v", err)
 	}
 
-	initReq, err := http.NewRequestWithContext(ctx, "POST", createUploadURLEndpoint, bytes.NewBuffer(jsonData))
+	log.Printf("Sending TikTok init request: %s", string(initJSON))
+
+	req, err := http.NewRequestWithContext(ctx, "POST", initEndpoint, bytes.NewBuffer(initJSON))
 	if err != nil {
 		result.TikTok.Success = false
-		result.TikTok.Error = fmt.Sprintf("failed to create init request: %v", err)
-		return fmt.Errorf("failed to create init request: %v", err)
+		result.TikTok.Error = "Failed to create initialization request"
+		return fmt.Errorf("failed to create initialization request: %v", err)
 	}
-	initReq.Header.Set("Authorization", "Bearer "+tokenResponse.AccessToken)
-	initReq.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
-	initResp, err := initClient.Do(initReq)
+	req.Header.Set("Authorization", "Bearer "+tokenResponse.AccessToken)
+	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+
+	resp, err := client.Do(req)
 	if err != nil {
-		if ctx.Err() != nil {
-			result.TikTok.Success = false
-			result.TikTok.Error = fmt.Sprintf("init request cancelled: %v", ctx.Err())
-			return fmt.Errorf("init request cancelled: %v", ctx.Err())
-		}
 		result.TikTok.Success = false
-		result.TikTok.Error = fmt.Sprintf("failed to send init request: %v", err)
-		return fmt.Errorf("failed to send init request: %v", err)
+		result.TikTok.Error = "Failed to connect to TikTok API"
+		return fmt.Errorf("failed to connect to TikTok API: %v", err)
 	}
-	defer initResp.Body.Close()
+	defer resp.Body.Close()
 
-	if initResp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(initResp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		result.TikTok.Success = false
-		result.TikTok.Error = fmt.Sprintf("failed to get upload URL, status: %d, response: %s", initResp.StatusCode, string(bodyBytes))
-		log.Printf("TikTok init request failed. Status: %d, Response: %s", initResp.StatusCode, string(bodyBytes))
-		return fmt.Errorf("failed to get upload URL, status: %d, response: %s", initResp.StatusCode, string(bodyBytes))
+		result.TikTok.Error = "Failed to read API response"
+		return fmt.Errorf("failed to read API response: %v", err)
 	}
 
-	var uploadURLResponse struct {
+	if resp.StatusCode != http.StatusOK {
+		result.TikTok.Success = false
+		result.TikTok.Error = fmt.Sprintf("Failed to initialize upload (HTTP %d)", resp.StatusCode)
+		log.Printf("TikTok init failed with status %d: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("failed to initialize upload: %s", string(body))
+	}
+
+	// Parse the initialization response
+	var initResponse struct {
 		Data struct {
-			UploadURL string `json:"upload_url"`
 			PublishID string `json:"publish_id"`
+			UploadURL string `json:"upload_url"`
 		} `json:"data"`
 		Error struct {
 			Code    string `json:"code"`
@@ -133,125 +137,142 @@ func UploadToTikTok(ctx context.Context, file multipart.File, header *multipart.
 		} `json:"error"`
 	}
 
-	bodyBytes, readErr := io.ReadAll(initResp.Body)
-	if readErr != nil {
+	err = json.Unmarshal(body, &initResponse)
+	if err != nil {
 		result.TikTok.Success = false
-		result.TikTok.Error = fmt.Sprintf("failed to read init response body: %v", readErr)
-		return fmt.Errorf("failed to read init response body: %v", readErr)
-	}
-	if err := json.Unmarshal(bodyBytes, &uploadURLResponse); err != nil {
-		result.TikTok.Success = false
-		result.TikTok.Error = fmt.Sprintf("failed to decode init response: %v. Body: %s", err, string(bodyBytes))
-		return fmt.Errorf("failed to decode init response: %v", err)
-	}
-	if uploadURLResponse.Error.Code != "ok" && uploadURLResponse.Error.Code != "" {
-		errorMsg := fmt.Sprintf("API error during init: %s (%s, log: %s)", uploadURLResponse.Error.Message, uploadURLResponse.Error.Code, uploadURLResponse.Error.LogID)
-		result.TikTok.Success = false
-		result.TikTok.Error = errorMsg
-		return fmt.Errorf(errorMsg)
-	}
-	if uploadURLResponse.Data.UploadURL == "" {
-		errorMsg := "API did not return an upload URL despite OK status"
-		result.TikTok.Success = false
-		result.TikTok.Error = errorMsg
-		return fmt.Errorf(errorMsg)
+		result.TikTok.Error = "Failed to parse initialization response"
+		return fmt.Errorf("failed to parse initialization response: %v", err)
 	}
 
-	// --- 4. Chunked Upload ---
+	// Check for API errors
+	if initResponse.Error.Code != "ok" && initResponse.Error.Code != "" {
+		result.TikTok.Success = false
+		result.TikTok.Error = fmt.Sprintf("TikTok API error: %s", initResponse.Error.Message)
+		return fmt.Errorf("TikTok API error: %s (code: %s, log: %s)",
+			initResponse.Error.Message, initResponse.Error.Code, initResponse.Error.LogID)
+	}
+
+	// Validate response data
+	if initResponse.Data.UploadURL == "" {
+		result.TikTok.Success = false
+		result.TikTok.Error = "No upload URL received from TikTok API"
+		return fmt.Errorf("no upload URL received from TikTok API")
+	}
+
+	if initResponse.Data.PublishID == "" {
+		result.TikTok.Success = false
+		result.TikTok.Error = "No publish ID received from TikTok API"
+		return fmt.Errorf("no publish ID received from TikTok API")
+	}
+
+	// --- 4. Upload the video file in chunks ---
+	uploadURL := initResponse.Data.UploadURL
+	publishID := initResponse.Data.PublishID
+
+	log.Printf("TikTok initialization successful. PublishID: %s", publishID)
+
+	// Reset file position to the beginning
 	if _, err := file.Seek(0, 0); err != nil {
 		result.TikTok.Success = false
-		result.TikTok.Error = fmt.Sprintf("failed to reset file position for chunking: %v", err)
-		return fmt.Errorf("failed to reset file position for chunking: %v", err)
+		result.TikTok.Error = "Failed to prepare file for upload"
+		return fmt.Errorf("failed to prepare file for upload: %v", err)
 	}
 
-	uploadClient := &http.Client{Timeout: 30 * time.Minute}
-	var bytesUploaded int64 = 0
-	chunkBuffer := make([]byte, actualChunkSize)
+	// Prepare for chunked upload
+	uploadClient := &http.Client{Timeout: 15 * time.Minute}
 
-	// Use the same 'totalChunks' calculation for the loop count
-	log.Printf("Starting TikTok chunked upload. Total size: %d, Chunk size: %d, Total chunks: %d", fileSize, actualChunkSize, totalChunks)
-
-	for i := 0; i < totalChunks; i++ { // Loop 'totalChunks' times
+	// Upload each chunk
+	for i := 0; i < totalChunks; i++ {
+		// Check if request is cancelled
 		if ctx.Err() != nil {
 			result.TikTok.Success = false
-			result.TikTok.Error = fmt.Sprintf("upload cancelled before chunk %d: %v", i+1, ctx.Err())
-			return fmt.Errorf("upload cancelled before chunk %d: %v", i+1, ctx.Err())
+			result.TikTok.Error = "Upload cancelled"
+			return fmt.Errorf("upload cancelled: %v", ctx.Err())
 		}
 
-		startByte := int64(i) * actualChunkSize
-		bytesToRead := actualChunkSize
-		if startByte+actualChunkSize > fileSize {
+		// Calculate chunk bounds
+		startByte := int64(i) * exactChunkSize
+		endByte := startByte + exactChunkSize - 1
+
+		// Adjust the last chunk size if needed
+		if endByte >= fileSize {
+			endByte = fileSize - 1
+		}
+		currentChunkSize := endByte - startByte + 1
+
+		// For the last chunk, make sure we read the exact remaining bytes
+		var bytesToRead int64
+		if i == totalChunks-1 {
 			bytesToRead = fileSize - startByte
+		} else {
+			bytesToRead = currentChunkSize
 		}
 
-		n, readErr := io.ReadFull(file, chunkBuffer[:bytesToRead])
-		if readErr != nil && readErr != io.EOF && readErr != io.ErrUnexpectedEOF {
-			errorMsg := fmt.Sprintf("failed to read chunk %d data: %v", i+1, readErr)
+		// Read the chunk data
+		chunkData := make([]byte, bytesToRead)
+		n, err := io.ReadFull(file, chunkData)
+		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 			result.TikTok.Success = false
-			result.TikTok.Error = errorMsg
-			return fmt.Errorf(errorMsg)
+			result.TikTok.Error = fmt.Sprintf("Failed to read chunk %d", i+1)
+			return fmt.Errorf("failed to read chunk %d: %v", i+1, err)
 		}
-		currentChunkBytes := chunkBuffer[:n]
-		currentChunkSize := int64(n)
-		endByte := startByte + currentChunkSize - 1
 
-		uploadReq, err := http.NewRequestWithContext(ctx, "PUT", uploadURLResponse.Data.UploadURL, bytes.NewReader(currentChunkBytes))
+		// Prepare the chunk data
+
+		// Create the upload request for this chunk
+		uploadReq, err := http.NewRequestWithContext(ctx, "PUT", uploadURL, bytes.NewReader(chunkData[:n]))
 		if err != nil {
-			errorMsg := fmt.Sprintf("failed to create upload request for chunk %d: %v", i+1, err)
 			result.TikTok.Success = false
-			result.TikTok.Error = errorMsg
-			return fmt.Errorf(errorMsg)
+			result.TikTok.Error = fmt.Sprintf("Failed to create upload request for chunk %d", i+1)
+			return fmt.Errorf("failed to create upload request for chunk %d: %v", i+1, err)
 		}
 
+		// Set headers for chunked upload
 		uploadReq.Header.Set("Content-Type", "video/mp4")
-		uploadReq.Header.Set("Content-Length", fmt.Sprintf("%d", currentChunkSize))
-		contentRange := fmt.Sprintf("bytes %d-%d/%d", startByte, endByte, fileSize)
-		uploadReq.Header.Set("Content-Range", contentRange)
+		uploadReq.Header.Set("Content-Length", fmt.Sprintf("%d", n))
+		uploadReq.Header.Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", startByte, startByte+int64(n)-1, fileSize))
 
-		// log.Printf("Uploading chunk %d/%d: Range %s, Size %d", i+1, totalChunks, contentRange, currentChunkSize) // Debug log
+		log.Printf("Uploading chunk %d/%d: bytes %d-%d/%d", i+1, totalChunks,
+			startByte, startByte+int64(n)-1, fileSize)
+
+		// Send the chunk
 		uploadResp, err := uploadClient.Do(uploadReq)
 		if err != nil {
-			if ctx.Err() != nil {
-				result.TikTok.Success = false
-				result.TikTok.Error = fmt.Sprintf("upload of chunk %d cancelled: %v", i+1, ctx.Err())
-				return fmt.Errorf("upload of chunk %d cancelled: %v", i+1, ctx.Err())
-			}
-			errorMsg := fmt.Sprintf("failed to upload chunk %d: %v", i+1, err)
 			result.TikTok.Success = false
-			result.TikTok.Error = errorMsg
-			return fmt.Errorf(errorMsg)
+			result.TikTok.Error = fmt.Sprintf("Failed to upload chunk %d", i+1)
+			return fmt.Errorf("failed to upload chunk %d: %v", i+1, err)
 		}
 
-		respBodyBytes, _ := io.ReadAll(uploadResp.Body)
+		// Read response body
+		uploadRespBody, _ := io.ReadAll(uploadResp.Body)
 		uploadResp.Body.Close()
-		statusCode := uploadResp.StatusCode
 
-		isLastChunk := (i == totalChunks-1) // Check against totalChunks
-
+		// Check response status
+		isLastChunk := (i == totalChunks-1)
 		if isLastChunk {
-			if statusCode != http.StatusOK && statusCode != http.StatusCreated {
-				errorMsg := fmt.Sprintf("failed to upload final chunk %d, status: %d, response: %s", i+1, statusCode, string(respBodyBytes))
+			// Final chunk should return 200 OK or 201 Created
+			if uploadResp.StatusCode != http.StatusOK && uploadResp.StatusCode != http.StatusCreated {
 				result.TikTok.Success = false
-				result.TikTok.Error = errorMsg
-				return fmt.Errorf(errorMsg)
+				result.TikTok.Error = fmt.Sprintf("Failed to upload final chunk (HTTP %d)", uploadResp.StatusCode)
+				return fmt.Errorf("failed to upload final chunk: status %d, response: %s",
+					uploadResp.StatusCode, string(uploadRespBody))
 			}
-			bytesUploaded = fileSize
-			log.Printf("Successfully uploaded final chunk %d. Total size: %d", i+1, bytesUploaded)
 		} else {
-			if statusCode != http.StatusPartialContent {
-				errorMsg := fmt.Sprintf("failed to upload intermediate chunk %d, expected status 206, got %d, response: %s", i+1, statusCode, string(respBodyBytes))
+			// Intermediate chunks should return 206 Partial Content
+			if uploadResp.StatusCode != http.StatusPartialContent {
 				result.TikTok.Success = false
-				result.TikTok.Error = errorMsg
-				return fmt.Errorf(errorMsg)
+				result.TikTok.Error = fmt.Sprintf("Failed to upload chunk %d (HTTP %d)", i+1, uploadResp.StatusCode)
+				return fmt.Errorf("failed to upload chunk %d: expected status 206, got %d, response: %s",
+					i+1, uploadResp.StatusCode, string(uploadRespBody))
 			}
-			bytesUploaded = endByte + 1
-			// log.Printf("Successfully uploaded intermediate chunk %d. Bytes uploaded: %d", i+1, bytesUploaded) // Debug log
 		}
+
+		log.Printf("Successfully uploaded chunk %d/%d", i+1, totalChunks)
 	}
 
-	// --- 5. Finalize ---
-	log.Printf("TikTok chunked upload completed successfully. Publish ID: %s", uploadURLResponse.Data.PublishID)
+	// --- 5. Success! ---
+	log.Printf("TikTok upload completed successfully. PublishID: %s", publishID)
 	result.TikTok.Success = true
-	result.TikTok.PostID = uploadURLResponse.Data.PublishID
-	return nil // Success!
+	result.TikTok.PostID = publishID
+	return nil
 }
