@@ -62,7 +62,7 @@ func Load(filename string) (*Config, error) {
 			Endpoint:     google.Endpoint,
 		},
 		InstagramOAuthConfig: &oauth2.Config{
-			RedirectURL:  "https://2b21-136-56-177-106.ngrok-free.app/callback/instagram",
+			RedirectURL:  "http://localhost:3000/callback/instagram",
 			ClientID:     creds.Instagram.ClientID,
 			ClientSecret: creds.Instagram.ClientSecret,
 			// Update scopes to match what's configured in FB dev portal

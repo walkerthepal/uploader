@@ -16,9 +16,11 @@
 	- Followers
 ## Youtube
 - Need to add uploading different privacy settings:
-	- [x] private
+	- [x] private - Done!
 	- [ ] unlisted - anyone with a link
 	- [ ] public
+## Instagram
+- No personal account api for uploads...
 
 ## Instagram
 - Need to add uploading different privacy settings:
@@ -28,6 +30,9 @@
   
 
 # Front End
-
-- Remove the loading percentage while uploading, use a different loading signal
-- Add warning dialog box if you click the button for the Select Platforms section of the upload page if that platform has not been logged into yet.
+## Upload Page
+- Rename the upload process bar to state to "Getting things ready: " for that section of loading. Then 
+- Add warning dialog box if:
+	- you click the button for the Select Platforms section of the upload page if that platform has not been logged into yet.
+	- Select youtube in the Select Platforms section without adding a Title
+***
