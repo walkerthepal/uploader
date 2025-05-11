@@ -89,6 +89,7 @@ func main() {
 	// Legal pages
 	r.Get("/terms", handlers.ShowTermsPage)
 	r.Get("/privacy", handlers.ShowPrivacyPage)
+	r.Get("/data-removal", handlers.ShowDataRemovalPage)
 
 	// Authentication routes
 	r.Get("/login/youtube", handlers.HandleYoutubeLogin)

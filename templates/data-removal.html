@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Removal - Uploader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="/static/js/dark_mode.js" defer></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col">
+    <header class="bg-white dark:bg-gray-800 shadow-sm">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center">
+                        <img src="/static/images/gramophone_logo.svg" alt="uploader logo" class="h-10 w-10 invert-0 dark:invert">
+                        <span class="ml-2 text-2xl font-bold text-gray-900 dark:text-white">uploader</span>
+                    </a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary">Home</a>
+                    <!-- Dark Mode Toggle Button -->
+                    <button type="button" class="theme-toggle inline-flex items-center justify-center p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary focus:outline-none" aria-label="Toggle dark mode">
+                        <span class="theme-toggle-icon">
+                            <!-- Sun icon (shows in dark mode) -->
+                            <svg class="sun-icon w-5 h-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <!-- Moon icon (shows in light mode) -->
+                            <svg class="moon-icon w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-grow py-8">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                <div class="px-4 py-5 sm:px-6">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Data Removal Request</h1>
+                    <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">Last updated: April 3, 2025</p>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-6 prose dark:prose-invert prose-indigo max-w-none">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Your Right to Data Removal</h2>
+                    <p class="text-gray-700 dark:text-gray-300">At Uploader, we respect your privacy and your right to control your personal data. This page explains how you can request the removal of your data from our systems.</p>
+                    
+                    <h2 class="text-xl font-semibold mt-6 mb-4 text-gray-900 dark:text-white">What Data We Store</h2>
+                    <p class="text-gray-700 dark:text-gray-300">We store the following types of data:</p>
+                    <ul class="list-disc pl-6 my-4 text-gray-700 dark:text-gray-300">
+                        <li>Account information (email, username, profile details)</li>
+                        <li>Connected social media account tokens</li>
+                        <li>Upload history and content metadata</li>
+                        <li>Usage statistics and preferences</li>
+                        <li>Communication records with our support team</li>
+                    </ul>
+                    
+                    <h2 class="text-xl font-semibold mt-6 mb-4 text-gray-900 dark:text-white">How to Request Data Removal</h2>
+                    <p class="text-gray-700 dark:text-gray-300">To request the removal of your data, you can:</p>
+                    <ol class="list-decimal pl-6 my-4 text-gray-700 dark:text-gray-300">
+                        <li>Send an email to privacy@uploader.example.com with the subject line "Data Removal Request"</li>
+                        <li>Include your account email address and any specific data you want removed</li>
+                        <li>We will verify your identity before processing the request</li>
+                    </ol>
+                    
+                    <h2 class="text-xl font-semibold mt-6 mb-4 text-gray-900 dark:text-white">What Happens After Your Request</h2>
+                    <p class="text-gray-700 dark:text-gray-300">Once we receive your request:</p>
+                    <ul class="list-disc pl-6 my-4 text-gray-700 dark:text-gray-300">
+                        <li>We will verify your identity within 48 hours</li>
+                        <li>We will process your request within 30 days</li>
+                        <li>We will send you a confirmation email once the data is removed</li>
+                        <li>We will retain minimal information required by law for record-keeping purposes</li>
+                    </ul>
+                    
+                    <h2 class="text-xl font-semibold mt-6 mb-4 text-gray-900 dark:text-white">Data Retention Requirements</h2>
+                    <p class="text-gray-700 dark:text-gray-300">Please note that we may be required to retain certain information for legal, security, or business purposes, including:</p>
+                    <ul class="list-disc pl-6 my-4 text-gray-700 dark:text-gray-300">
+                        <li>Records of transactions for tax purposes</li>
+                        <li>Information required for legal compliance</li>
+                        <li>Data necessary for fraud prevention</li>
+                    </ul>
+                    
+                    <h2 class="text-xl font-semibold mt-6 mb-4 text-gray-900 dark:text-white">Third-Party Data</h2>
+                    <p class="text-gray-700 dark:text-gray-300">Please note that removing your data from our systems does not automatically remove your content from third-party platforms (YouTube, Instagram, TikTok). You will need to manage your content on those platforms separately.</p>
+                    
+                    <h2 class="text-xl font-semibold mt-6 mb-4 text-gray-900 dark:text-white">Contact Us</h2>
+                    <p class="text-gray-700 dark:text-gray-300">If you have any questions about the data removal process, please contact our privacy team at privacy@uploader.example.com.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white dark:bg-gray-800">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <p class="text-sm text-gray-500 dark:text-gray-400">&copy; 2024 Uploader. All rights reserved.</p>
+                <div class="flex space-x-4 text-xs text-gray-400 dark:text-gray-500">
+                    <a href="/terms" class="hover:text-gray-500 dark:hover:text-gray-300">Terms of Service</a>
+                    <a href="/privacy" class="hover:text-gray-500 dark:hover:text-gray-300">Privacy Policy</a>
+                    <a href="/data-removal" class="hover:text-gray-500 dark:hover:text-gray-300">Data Removal</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html> 

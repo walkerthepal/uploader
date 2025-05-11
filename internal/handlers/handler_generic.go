@@ -41,6 +41,11 @@ func ShowUploadPage(w http.ResponseWriter, r *http.Request) {
 	templates.ExecuteTemplate(w, "upload.html", nil)
 }
 
+// ShowDataRemovalPage displays the data removal request page
+func ShowDataRemovalPage(w http.ResponseWriter, r *http.Request) {
+	templates.ExecuteTemplate(w, "data-removal.html", nil)
+}
+
 // HandleUpload processes the upload form submission
 func HandleUpload(w http.ResponseWriter, r *http.Request) {
 	result := &models.UploadResult{} // Initialize result struct
